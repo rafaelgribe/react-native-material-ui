@@ -5,7 +5,7 @@ import { View, Image, StyleSheet } from 'react-native';
 import HeaderAccount from './HeaderAccount.react';
 
 const propTypes = {
-    image: PropTypes.shape({ type: PropTypes.oneOf([Image]) }),
+    image: PropTypes.shape({ type: PropTypes.oneOf([Image, View]) }),
     backgroundColor: PropTypes.string,
     children: PropTypes.node,
 };
