@@ -18,49 +18,49 @@ import isFunction from '../utils/isFunction';
 
 const propTypes = {
     /**
-    * Indicates if search is active or not
-    */
+     * Indicates if search is active or not
+     */
     isSearchActive: PropTypes.bool,
     /**
-    * When you want to activate search feature you have to pass this object with config of search.
-    */
+     * When you want to activate search feature you have to pass this object with config of search.
+     */
     searchable: PropTypes.shape({
         /**
-        * Called when search text was changed.
-        */
+         * Called when search text was changed.
+         */
         onChangeText: PropTypes.func,
         /**
-        * Called when search was closed.
-        */
+         * Called when search was closed.
+         */
         onSearchClosed: PropTypes.func,
         /**
-        * Called when search was opened.
-        */
+         * Called when search was opened.
+         */
         onSearchPressed: PropTypes.func,
         /**
-        * Called when user press submit button on hw keyboard
-        */
+         * Called when user press submit button on hw keyboard
+         */
         onSubmitEditing: PropTypes.func,
         /**
-        * Will shown as placeholder for search input.
-        */
+         * Will shown as placeholder for search input.
+         */
         placeholder: PropTypes.string,
         /**
-        * Indicates when input should be focused after the search is opened.
-        */
+         * Indicates when input should be focused after the search is opened.
+         */
         autoFocus: PropTypes.bool,
         /**
-        * Enable auto-capitalize for search input
-        */
+         * Enable auto-capitalize for search input
+         */
         autoCapitalize: PropTypes.string,
         /**
-        * Enable auto-correct for search input
-        */
+         * Enable auto-correct for search input
+         */
         autoCorrect: PropTypes.bool,
     }),
     /**
-    * You can overide any style for the component via this prop
-    */
+     * You can overide any style for the component via this prop
+     */
     style: PropTypes.shape({
         container: View.propTypes.style,
         leftElementContainer: View.propTypes.style,
@@ -71,55 +71,55 @@ const propTypes = {
         rightElement: IconToggle.propTypes.style,
     }),
     /**
-    * This size is used for each icon on the toolbar
-    */
+     * This size is used for each icon on the toolbar
+     */
     size: PropTypes.number,
     /**
-    * Wether or not the Toolbar should show
-    */
+     * Wether or not the Toolbar should show
+     */
     hidden: PropTypes.bool,
     /**
-    * Called when centerElement was pressed.
-    * TODO: better to rename to onCenterElementPress
-    */
+     * Called when centerElement was pressed.
+     * TODO: better to rename to onCenterElementPress
+     */
     onPress: PropTypes.func,
     /**
-    * Will be shown on the left side.
-    */
+     * Will be shown on the left side.
+     */
     leftElement: PropTypes.oneOfType([
         PropTypes.element,
         PropTypes.string,
     ]),
     /**
-    * Called when leftElement was pressed.
-    */
+     * Called when leftElement was pressed.
+     */
     onLeftElementPress: PropTypes.func,
     /**
-    * Will be shown between leftElement and rightElement. Usually use for title.
-    */
+     * Will be shown between leftElement and rightElement. Usually use for title.
+     */
     centerElement: PropTypes.oneOfType([
         PropTypes.element,
         PropTypes.string,
     ]),
     /**
-    * Will be shown on the right side.
-    */
+     * Will be shown on the right side.
+     */
     rightElement: PropTypes.oneOfType([
         /**
-        * Whatever you want to have on the right side
-        */
+         * Whatever you want to have on the right side
+         */
         PropTypes.element,
         /**
-        * One action (name of icon). Alias for ['icon1'].
-        */
+         * One action (name of icon). Alias for ['icon1'].
+         */
         PropTypes.string,
         /**
-        * For many actions: ['icon1', 'icon2', ...]
-        */
+         * For many actions: ['icon1', 'icon2', ...]
+         */
         PropTypes.arrayOf(PropTypes.string),
         /**
-        * For actions and menu. The menu will be shown as last one icon.
-        */
+         * For actions and menu. The menu will be shown as last one icon.
+         */
         PropTypes.shape({
             actions: PropTypes.arrayOf(
                 PropTypes.oneOfType([
@@ -134,8 +134,8 @@ const propTypes = {
         }),
     ]),
     /**
-    * Called when rightElement was pressed.
-    */
+     * Called when rightElement was pressed.
+     */
     onRightElementPress: PropTypes.func,
 };
 const defaultProps = {
@@ -147,7 +147,12 @@ const contextTypes = {
     uiTheme: PropTypes.object.isRequired,
 };
 
-const EMPTY_BACK_BUTTON_LISTENER = { remove: () => {} };
+const EMPTY_BACK_BUTTON_LISTENER = {
+    remove: (callback) => {
+        BackAndroid.removeEventListener('closeRequested', callback)
+    }
+};
+
 const getBackButtonListener = (callback, isSearchActive) => {
     // if search is active by default we need to listen back button
     if (isSearchActive) {
@@ -176,9 +181,9 @@ class Toolbar extends PureComponent {
 
         const isSearchActive = props.isSearchActive || false;
         this.backButtonListener = getBackButtonListener(
-                                        this.onSearchCloseRequested,
-                                        isSearchActive,
-                                    );
+            this.onSearchCloseRequested,
+            isSearchActive,
+        );
 
         this.state = {
             // indicates if searc is activated
@@ -258,13 +263,19 @@ class Toolbar extends PureComponent {
         this.onSearchTextChanged('');
     }
     /**
-    * Android's HW/SW back button
-    */
+     * Android's HW/SW back button
+     */
     onSearchCloseRequested = () => {
         this.setState({
             isSearchActive: false,
             searchValue: '',
         });
+
+        const { searchable } = this.props;
+
+        if (searchable && isFunction(searchable.onSearchClosed)) {
+            searchable.onSearchClosed();
+        }
 
         this.animateDefaultBackground(() => {
             // default scale set up back to "hidden" value
@@ -279,13 +290,7 @@ class Toolbar extends PureComponent {
         return true; // because we need to stop propagation
     }
     onSearchClosed = () => {
-        const { searchable } = this.props;
-
-        this.backButtonListener.remove();
-
-        if (searchable && isFunction(searchable.onSearchClosed)) {
-            searchable.onSearchClosed();
-        }
+        this.backButtonListener.remove(this.onSearchCloseRequested);
     }
     onLayout = (event) => {
         const { width, height } = event.nativeEvent.layout;
